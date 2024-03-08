@@ -1,42 +1,45 @@
 import React from 'react';
 import axios from 'axios';
+const { backendUrl } = require('../config.ts');
 import { View, ImageBackground, Text, TextInput, StyleSheet, KeyboardAvoidingView, TouchableHighlight, Alert } from 'react-native';
+import { NavigationProp } from '@react-navigation/native';
 
-export default function Register() {
-    const [name, setName] = React.useState('');
-    const [surname, setSurname] = React.useState('');
+export default function Register({ navigation }: { navigation: NavigationProp<any> }) {
     const [email, setEmail] = React.useState('');
-    const [phone, setPhone] = React.useState('');
     const [password, setPassword] = React.useState('');
-    const [confirmPassword, setConfirmPassword] = React.useState('');
 
     const sendSignUpForm = () => {
-        if(password && email){
-            //axios.post("http://localhost:8080/signup", {})
+        if (email && password) {
+            const formData = {
+                email: email,
+                password: password
+            };
+            console.log("formData", formData);
+            axios.post(backendUrl + '/signup/client', formData)
+                .then(response => {
+                    navigation.navigate("SignIn");
+                })
+                .catch(error => {
+                    if (error.message.includes("409")) Alert.alert('Erreur', 'Vous êtes deja inscrit.');
+                    else console.error("Registration failed", error);
+                });
         }
         else Alert.alert("Erreur", "Veuillez remplir tous les champs");
-    }
+    };
 
     return (
-
         <ImageBackground style={{ flex: 1 }} source={require("../../assets/register-background.jpg")} resizeMode="cover">
-            <KeyboardAvoidingView behavior='position' style={{ flex: 1, backgroundColor: "rgba(19, 85, 162, 0.7)" }}>
+            <View style={{ flex: 1, backgroundColor: "rgba(19, 85, 162, 0.7)" }}>
                 <Text style={styles.titre}>INSCRIPTION</Text>
-                <TextInput value={name} placeholder='Nom' placeholderTextColor="grey" style={styles.form} onChangeText={setName} returnKeyType='next' />
-                <TextInput value={surname} placeholder='Prénom' placeholderTextColor="grey" style={styles.form} onChangeText={setSurname} returnKeyType='next' />
                 <TextInput value={email} inputMode='email' placeholder='Email' placeholderTextColor="grey" style={styles.form} onChangeText={setEmail} returnKeyType='next' />
-                <TextInput value={phone} maxLength={10} keyboardType="phone-pad" placeholder='Téléphone' placeholderTextColor="grey" style={styles.form} onChangeText={setPhone} returnKeyType='next' />
-                <TextInput value={password} secureTextEntry={true} placeholder='Mot de passe' placeholderTextColor="grey" style={styles.form} onChangeText={setPassword} returnKeyType='next' />
-                <TextInput value={confirmPassword} secureTextEntry={true} placeholder='Confirmer mot de passe' placeholderTextColor="grey" style={styles.form} onChangeText={setConfirmPassword} returnKeyType='send' />
-                <TouchableHighlight underlayColor="darkred" style={styles.buttons} onPress={() => { sendSignUpForm() }}>
+                <TextInput value={password} secureTextEntry={true} placeholder='Mot de passe' placeholderTextColor="grey" style={styles.form} onChangeText={setPassword} returnKeyType='send' />
+                <TouchableHighlight underlayColor="darkred" style={styles.buttons} onPress={sendSignUpForm}>
                     <Text style={styles.buttonText}>CONTINUER</Text>
                 </TouchableHighlight>
-            </KeyboardAvoidingView>
+            </View>
         </ImageBackground>
-
-    )
+    );
 }
-
 
 const styles = StyleSheet.create({
     form: {

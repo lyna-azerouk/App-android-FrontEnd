@@ -11,7 +11,7 @@ export default function OnBoarding({ navigation }: { navigation: NavigationProp<
                 <Text style={styles.buttonText}>INSCRIPTION</Text>
             </TouchableHighlight>
 
-            <TouchableHighlight underlayColor="darkred" style={styles.buttons} onPress={() => { Alert.alert("Bienvenue", "a cliqué sur Connexion") }}>
+            <TouchableHighlight underlayColor="darkred" style={styles.buttons} onPress={() => { navigation.navigate("SignIn") }}>
                 <Text style={styles.buttonText}>CONNEXION</Text>
             </TouchableHighlight>
         </View>
