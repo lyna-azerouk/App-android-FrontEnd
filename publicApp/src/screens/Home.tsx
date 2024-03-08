@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 const { backendUrl } = require('../config.ts');
-import { View, ScrollView, Text, StyleSheet, Button, PermissionsAndroid } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, Button, PermissionsAndroid, RefreshControl } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 
 const requestLocationPermission = async () => {
@@ -32,6 +32,8 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
     const token = route.params?.token;
     const [restaurants, setRestaurants] = useState<any[]>([]);
     const [location, setLocation] = useState<any>(null);
+    const [refreshing, setRefreshing] = React.useState(false);
+    const [refreshAsked, setRefreshAsked] = useState(false);
 
     interface Position {
         coords: {
@@ -39,6 +41,13 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             longitude: number;
         }
     }
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        setRefreshAsked(!refreshAsked);
+        setTimeout(() => {
+          setRefreshing(false);
+        }, 2000);
+      }, []);
     
     const getLocation = () => {
         return new Promise<Position>((resolve, reject) => {
@@ -69,8 +78,9 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             try {
                 const location: Position = await getLocation();
 
-                const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.001`, {
-                    headers: {
+                //const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.001`, {
+                const response = await axios.get(`${backendUrl}/restaurants/2.3228662/48.8298353/0.0001`, {  //Provisoire
+                headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
@@ -81,16 +91,21 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
         };
     
         fetchData();
-    }, [token]);
+    }, [token, refreshAsked]);
+    
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.container}>
             <Text >Email: { }</Text>
             <View style={styles.container}>
                 <View>
                     <Text style={styles.header}>Liste des restaurants:</Text>
                     {restaurants.map(restaurant => (restaurant.tags.name) ? (
                         <View key={restaurant.id} style={styles.restaurantContainer}>
-                            <Button color="#1355A2" title={restaurant.tags.name} />
+                            <Button color="#1355A2" title={restaurant.tags.name} 
+                            onPress={() => {
+                                navigation.navigate('Restaurant', { id: restaurant.id, token: token });
+                            }}/>
                         </View>
                     ) : null
 
