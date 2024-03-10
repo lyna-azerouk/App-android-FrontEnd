@@ -7,20 +7,25 @@ import { NavigationProp } from '@react-navigation/native';
 export default function Register({ navigation }: { navigation: NavigationProp<any> }) {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
+    const [confirmPassword, setConfirmPassword] = React.useState('');
+    const [firstName, setFirstName] = React.useState('');
+    const [lastName, setLastName] = React.useState('');
 
     const sendSignUpForm = () => {
-        if (email && password) {
+        if (email && password && firstName && lastName && confirmPassword) {
+            if(password !== confirmPassword) return Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
             const formData = {
                 email: email,
-                password: password
+                password: password,
+                firstName: firstName,
+                lastName: lastName
             };
-            console.log("formData", formData);
             axios.post(backendUrl + '/signup/client', formData)
                 .then(response => {
                     navigation.navigate("SignIn");
                 })
                 .catch(error => {
-                    if (error.message.includes("409")) Alert.alert('Erreur', 'Vous êtes deja inscrit.');
+                    if (error.message.includes("409")) Alert.alert('Erreur', 'Cette adresse email est déjà utilisée');
                     else console.error("Registration failed", error);
                 });
         }
@@ -31,8 +36,11 @@ export default function Register({ navigation }: { navigation: NavigationProp<an
         <ImageBackground style={{ flex: 1 }} source={require("../../assets/register-background.jpg")} resizeMode="cover">
             <View style={{ flex: 1, backgroundColor: "rgba(19, 85, 162, 0.7)" }}>
                 <Text style={styles.titre}>INSCRIPTION</Text>
+                <TextInput value={firstName} inputMode='text' placeholder='Prénom' placeholderTextColor="grey" style={styles.form} onChangeText={setFirstName} returnKeyType='next' />
+                <TextInput value={lastName} inputMode='text' placeholder='Nom de famille' placeholderTextColor="grey" style={styles.form} onChangeText={setLastName} returnKeyType='next' />
                 <TextInput value={email} inputMode='email' placeholder='Email' placeholderTextColor="grey" style={styles.form} onChangeText={setEmail} returnKeyType='next' />
                 <TextInput value={password} secureTextEntry={true} placeholder='Mot de passe' placeholderTextColor="grey" style={styles.form} onChangeText={setPassword} returnKeyType='send' />
+                <TextInput value={confirmPassword} secureTextEntry={true} placeholder='Confirmer mot de passe' placeholderTextColor="grey" style={styles.form} onChangeText={setConfirmPassword} returnKeyType='send' />
                 <TouchableHighlight underlayColor="darkred" style={styles.buttons} onPress={sendSignUpForm}>
                     <Text style={styles.buttonText}>CONTINUER</Text>
                 </TouchableHighlight>

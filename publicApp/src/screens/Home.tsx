@@ -41,14 +41,28 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             longitude: number;
         }
     }
+    const fetchData = async () => {
+        try {
+            const location: Position = await getLocation();
+
+            const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.0001`, {
+            //const response = await axios.get(`${backendUrl}/restaurants/2.3228662/48.8298353/0.0001`, {  //Village Terraza
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            setRestaurants(response.data.restaurants);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
     const onRefresh = React.useCallback(() => {
         setRefreshing(true);
         setRefreshAsked(!refreshAsked);
-        setTimeout(() => {
-          setRefreshing(false);
-        }, 2000);
-      }, []);
-    
+        fetchData().then(() => setRefreshing(false));
+    }, []);
+
     const getLocation = () => {
         return new Promise<Position>((resolve, reject) => {
             requestLocationPermission().then(result => {
@@ -72,40 +86,23 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             });
         });
     };
-    
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const location: Position = await getLocation();
 
-                //const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.001`, {
-                const response = await axios.get(`${backendUrl}/restaurants/2.3228662/48.8298353/0.0001`, {  //Provisoire
-                headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-                setRestaurants(response.data.restaurants);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-    
+    useEffect(() => {
         fetchData();
-    }, [token, refreshAsked]);
-    
+    }, []);
+
     return (
         <ScrollView refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.container}>
-            <Text >Email: { }</Text>
             <View style={styles.container}>
                 <View>
                     <Text style={styles.header}>Liste des restaurants:</Text>
                     {restaurants.map(restaurant => (restaurant.tags.name) ? (
                         <View key={restaurant.id} style={styles.restaurantContainer}>
-                            <Button color="#1355A2" title={restaurant.tags.name} 
-                            onPress={() => {
-                                navigation.navigate('Restaurant', { id: restaurant.id, token: token });
-                            }}/>
+                            <Button color="#1355A2" title={restaurant.tags.name}
+                                onPress={() => {
+                                    navigation.navigate('Restaurant', { id: restaurant.id, token: token });
+                                }} />
                         </View>
                     ) : null
 

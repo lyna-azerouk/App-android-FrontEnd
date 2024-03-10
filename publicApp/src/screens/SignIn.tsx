@@ -14,12 +14,10 @@ export default function SignIn({ navigation }: { navigation: NavigationProp<any>
                 email: email,
                 password: password
             };
-            console.log("formData", formData);
             axios.post(backendUrl+'/auth/client', formData)
                 .then(response => {
-                    console.log("Authentification successful", response.data.token);
                     const token = response.data.token;
-                    navigation.navigate("Home", { token: token })
+                    navigation.navigate("Restaurant", { token: token })
                 })
                 .catch(error => {
                     console.error("Authentification failed", error);
