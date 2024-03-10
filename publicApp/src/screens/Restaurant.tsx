@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React, { useEffect, useState } from 'react';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { View, Text, StyleSheet, Image, ScrollView, Button } from 'react-native';
@@ -6,22 +7,22 @@ import axios from 'axios';
 const { backendUrl } = require('../config.ts');
 
 interface MenuItem {
-    menuId: string;
+    menuId: bigint;
     count: number;
 }
 
 interface OrderRequestBody {
-    ClientId: string;
-    RestaurantId: number;
+    ClientId: bigint;
+    RestaurantId:   bigint;
     items: MenuItem[];
 }
 
 
 const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) => {
     const token = route.params?.token;
-    const restaurantId = 158603712 //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
+    const restaurantId = "158603712" //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
     const [restaurantData, setRestaurantData] = useState<any>(null);
-    const [items, setItems] = useState<any>([]);
+    const [items, setItems] = useState<MenuItem[]>([]); // Fix: Update the initial state value to an empty array of type MenuItem[]
     const [hasAtLeastOne, setHasAtLeastOne] = useState(false);
     const [menuNumber, setMenuNumber] = useState(0);
 
@@ -47,7 +48,7 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const addMenuToItems = (menu: any) => {
         let newItems = [...items];
         if(newItems.length === 0) {
-            setItems([{menuId: menu.id, count: 1}]);
+            setItems([{menuId:  BigInt(menu.id), count: 1}]);
             return;
         }
         for(let item of newItems){
@@ -62,7 +63,7 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const removeMenuFromItems = (menu: any) => {
         let newItems = [...items];
         if(newItems.length === 0) {
-            setItems([{menuId: menu.id, count: 1}]);
+            setItems([{menuId: (menu.id), count: 1}]);
             return;
         }
         for(let item of newItems){
@@ -77,8 +78,8 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const placeOrder = async () => {
         try {
             const requestBody: OrderRequestBody = {
-                ClientId: "945487980946653185",
-                RestaurantId: restaurantId,
+                ClientId: BigInt("949679953603723265"),
+                RestaurantId: BigInt(restaurantId),
                 items: items
             };
             console.log('Request body:', requestBody)

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { NavigationProp } from "@react-navigation/native"
 import React from "react"
 import { StyleSheet, Image, Text, View, TouchableHighlight, Alert } from "react-native"
