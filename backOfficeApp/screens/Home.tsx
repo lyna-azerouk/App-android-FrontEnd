@@ -1,8 +1,8 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
-import {StyleSheet, View, Text, Image, TextInput} from 'react-native';
+import {StyleSheet, View, Text, Image} from 'react-native';
 
-export default function Register() {
+export default function Home() {
   return (
     <View style={styles.container}>
       <View style={styles.leftSection}>
@@ -13,18 +13,7 @@ export default function Register() {
         />
       </View>
       <View style={styles.middleSection}>
-        <Text style={styles.title}>Inscription</Text>
-        <TextInput style={styles.input} placeholder="Email" />
-        <TextInput
-          style={styles.input}
-          secureTextEntry={true}
-          placeholder="Mot de passe"
-        />
-        <TextInput
-          style={styles.input}
-          secureTextEntry={true}
-          placeholder="Confirmer mot de passe"
-        />
+        <Text style={styles.title}>HOME</Text>
       </View>
     </View>
   );

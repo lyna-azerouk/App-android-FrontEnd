@@ -1,8 +1,47 @@
-/* eslint-disable prettier/prettier */
 import React from 'react';
-import {StyleSheet, View, Text, Image, TextInput} from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TextInput,
+  Alert,
+  TouchableHighlight,
+} from 'react-native';
+import {NavigationProp} from '@react-navigation/native';
+const {backendUrl} = require('../config.ts');
+import axios from 'axios';
+import {Home} from './Home.tsx';
 
-export default function SignIn() {
+export default function SignIn({
+  navigation,
+}: {
+  navigation: NavigationProp<any>;
+}) {
+  const [id, setId] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
+  const sendSignInForm = () => {
+    const numericId = parseInt(id, 10);
+    if (id && password) {
+      const formData = {
+        id: numericId,
+        password: password,
+      };
+      axios
+        .post(backendUrl + '/auth/restaurant', formData)
+        .then(response => {
+          const token = response.data.token;
+          navigation.navigate('Home', {token: token});
+        })
+        .catch(error => {
+          console.error('Authentification failed', error);
+        });
+    } else {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.leftSection}>
@@ -14,8 +53,25 @@ export default function SignIn() {
       </View>
       <View style={styles.middleSection}>
         <Text style={styles.title}>Connexion</Text>
-        <TextInput style={styles.input} placeholder="Email" />
-        <TextInput style={styles.input} secureTextEntry={true} placeholder="Mot de passe"/>
+        <TextInput
+          value={id}
+          onChangeText={setId}
+          style={styles.input}
+          placeholder="ID"
+        />
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+          secureTextEntry={true}
+          placeholder="Mot de passe"
+        />
+        <TouchableHighlight
+          underlayColor="darkred"
+          style={styles.button}
+          onPress={sendSignInForm}>
+          <Text style={styles.buttonText}>Continue</Text>
+        </TouchableHighlight>
       </View>
     </View>
   );
@@ -53,5 +109,18 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
     paddingLeft: 10,
+  },
+  button: {
+    width: 150,
+    height: 40,
+    borderRadius: 5,
+    backgroundColor: '#03428C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 20,
   },
 });

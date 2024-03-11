@@ -1,9 +1,10 @@
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import HomeScreen from './screens/OnBoarding.tsx';
+import OnBorading from './screens/OnBoarding.tsx';
 import Register from './screens/Register.tsx';
 import SignIn from './screens/SignIn.tsx';
+import Home from './screens/Home.tsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -14,9 +15,10 @@ export default function App() {
         screenOptions={{
           headerShown: false,
         }}>
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="OnBorading" component={OnBorading} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="SignIn" component={SignIn} />
+        <Stack.Screen name="Home" component={Home} />
       </Stack.Navigator>
     </NavigationContainer>
   );
