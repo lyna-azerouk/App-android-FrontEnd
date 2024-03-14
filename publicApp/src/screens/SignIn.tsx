@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React from 'react';
 import axios from 'axios';
 const {backendUrl} = require('../config.ts');
@@ -20,25 +21,25 @@ export default function SignIn({
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
 
-  const sendSignInForm = () => {
-    if (email && password) {
-      const formData = {
-        email: email,
-        password: password,
-      };
-      axios
-        .post(backendUrl + '/auth/client', formData)
-        .then(response => {
-          const token = response.data.token;
-          navigation.navigate('Restaurant', {token: token});
-        })
-        .catch(error => {
-          console.error('Authentification failed', error);
-        });
-    } else {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
-    }
-  };
+    const sendSignInForm = () => {
+        if (email && password) {
+            const formData = {
+                email: email,
+                password: password
+            };
+            axios.post(backendUrl+'/auth/client', formData)
+                .then(response => {
+                    const token = response.data.token;
+                    const id = response.data.id;
+                    console.log(response.data);  //To do: get the id  (the id is equal to nil) 
+                    navigation.navigate("Home", {id: id,  token: token })
+                })
+                .catch(error => {
+                    console.error("Authentification failed", error);
+                });
+        }
+        else Alert.alert("Erreur", "Veuillez remplir tous les champs");
+    };
 
   return (
     <ImageBackground

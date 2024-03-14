@@ -1,3 +1,4 @@
+/* eslint-disable curly */
 /* eslint-disable prettier/prettier */
 import React from 'react';
 import axios from 'axios';

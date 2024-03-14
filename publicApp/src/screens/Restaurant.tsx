@@ -1,27 +1,29 @@
+/* eslint-disable prettier/prettier */
 import React, { useEffect, useState } from 'react';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
-import { View, Text, StyleSheet, Image, ScrollView, Button } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, Button, Alert } from 'react-native';
 import axios from 'axios';
 
 const { backendUrl } = require('../config.ts');
 
 interface MenuItem {
     menuId: string;
-    count: number;
+    count: string; // Fix: Update the type of 'count' to be 'number'
 }
 
 interface OrderRequestBody {
     ClientId: string;
-    RestaurantId: number;
+    RestaurantId:   string;
     items: MenuItem[];
 }
 
 
 const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) => {
     const token = route.params?.token;
-    const restaurantId = 158603712 //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
+    const restaurantId = route.params?.restaurant_id;
+    const client_id = route.params?.client_id; //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
     const [restaurantData, setRestaurantData] = useState<any>(null);
-    const [items, setItems] = useState<any>([]);
+    const [items, setItems] = useState<MenuItem[]>([]); // Fix: Update the initial state value to an empty array of type MenuItem[]
     const [hasAtLeastOne, setHasAtLeastOne] = useState(false);
     const [menuNumber, setMenuNumber] = useState(0);
 
@@ -29,7 +31,7 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     useEffect(() => {
         const fetchData = async () => {
             try {
-
+                console.log(restaurantId);
                 const response = await axios.get(`${backendUrl}/restaurant/${restaurantId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -47,12 +49,12 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const addMenuToItems = (menu: any) => {
         let newItems = [...items];
         if(newItems.length === 0) {
-            setItems([{menuId: menu.id, count: 1}]);
+            setItems([{menuId:  menu.id.toString(), count: "1"}]);
             return;
         }
         for(let item of newItems){
-            if(item.menuId === menu.id){
-                item.count += 1;
+            if(item.menuId === menu.id.toString()){
+                item.count = (parseInt(item.count)+1).toString();
                 setItems(newItems);
                 return;
             }
@@ -62,12 +64,12 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const removeMenuFromItems = (menu: any) => {
         let newItems = [...items];
         if(newItems.length === 0) {
-            setItems([{menuId: menu.id, count: 1}]);
+            setItems([{menuId: (menu.id).toString(), count: "1"}]);
             return;
         }
         for(let item of newItems){
-            if(item.menuId === menu.id){
-                item.count -= 1;
+            if(item.menuId === (menu.id).toString()){
+                item.count = (parseInt(item.count)-1).toString();;
                 setItems(newItems);
                 return;
             }
@@ -77,16 +79,18 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const placeOrder = async () => {
         try {
             const requestBody: OrderRequestBody = {
-                ClientId: "945487980946653185",
-                RestaurantId: restaurantId,
+                ClientId: client_id,
+                RestaurantId: restaurantId.toString(),
                 items: items
             };
-            console.log('Request body:', requestBody)
             const response = await axios.post(`${backendUrl}/order`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
+            console.log('Order placed:', response.data);
+            Alert.alert("Commande passée", "Votre commande a bien été passée");
+            navigation.navigate('Orders', {client_id: client_id,  token: token });
         } catch (error) {
             console.error('Error placing order:', error);
         }

@@ -1,9 +1,11 @@
+/* eslint-disable prettier/prettier */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 const { backendUrl } = require('../config.ts');
 import { View, ScrollView, Text, StyleSheet, Button, PermissionsAndroid, RefreshControl } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
+import Orders from './Orders';
 
 const requestLocationPermission = async () => {
     try {
@@ -30,6 +32,7 @@ const requestLocationPermission = async () => {
 
 export default function Home({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) {
     const token = route.params?.token;
+    const id =route.params?.id;
     const [restaurants, setRestaurants] = useState<any[]>([]);
     const [location, setLocation] = useState<any>(null);
     const [refreshing, setRefreshing] = React.useState(false);
@@ -45,8 +48,8 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
         try {
             const location: Position = await getLocation();
 
-            const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.0001`, {
-            //const response = await axios.get(`${backendUrl}/restaurants/2.3228662/48.8298353/0.0001`, {  //Village Terraza
+           // const response = await axios.get(`${backendUrl}/restaurants/${location.coords.longitude}/${location.coords.latitude}/0.0001`, {
+            const response = await axios.get(`${backendUrl}/restaurants/2.3228662/48.8298353/0.0001`, {  //Village Terraza
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -96,18 +99,23 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.container}>
             <View style={styles.container}>
                 <View>
+                <Text style={styles.container}>User Id : {id}</Text>
                     <Text style={styles.header}>Liste des restaurants:</Text>
                     {restaurants.map(restaurant => (restaurant.tags.name) ? (
                         <View key={restaurant.id} style={styles.restaurantContainer}>
                             <Button color="#1355A2" title={restaurant.tags.name}
                                 onPress={() => {
-                                    navigation.navigate('Restaurant', { id: restaurant.id, token: token });
+                                    navigation.navigate('Restaurant', { client_id: id,  restaurant_id: restaurant.id, token: token });
                                 }} />
                         </View>
                     ) : null
 
                     )}
                 </View>
+                <Button color="#1355A2" title={"Mes commandes"}
+                    onPress={() => {
+                        navigation.navigate('Orders', {client_id: id, token: token });
+                    }} />
             </View>
         </ScrollView>
     );
