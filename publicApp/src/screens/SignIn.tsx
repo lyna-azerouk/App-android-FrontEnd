@@ -3,6 +3,7 @@ import React from 'react';
 import axios from 'axios';
 const {backendUrl} = require('../config.ts');
 import {NavigationProp} from '@react-navigation/native';
+import Context from '../Context';
 import {
   View,
   ImageBackground,
@@ -13,13 +14,10 @@ import {
   Alert,
 } from 'react-native';
 
-export default function SignIn({
-  navigation,
-}: {
-  navigation: NavigationProp<any>;
-}) {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+export default function SignIn({ navigation }: { navigation: NavigationProp<any> }) {
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const {token, updateToken, ClientId, updateClientId} = React.useContext(Context);
 
     const sendSignInForm = () => {
         if (email && password) {
@@ -29,10 +27,9 @@ export default function SignIn({
             };
             axios.post(backendUrl+'/auth/client', formData)
                 .then(response => {
-                    const token = response.data.token;
-                    const id = response.data.id;
-                    console.log(response.data);  //To do: get the id  (the id is equal to nil) 
-                    navigation.navigate("Home", {id: id,  token: token })
+                    updateToken(response.data.token);
+                    updateClientId(ClientId);
+                    //navigation.navigate("Home", { token: token })
                 })
                 .catch(error => {
                     console.error("Authentification failed", error);

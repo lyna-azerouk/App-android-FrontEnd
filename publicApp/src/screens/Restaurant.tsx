@@ -1,27 +1,26 @@
-/* eslint-disable prettier/prettier */
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import { View, Text, StyleSheet, Image, ScrollView, Button, Alert } from 'react-native';
 import axios from 'axios';
+import Context from '../Context';
 
 const { backendUrl } = require('../config.ts');
 
 interface MenuItem {
     menuId: string;
-    count: string; // Fix: Update the type of 'count' to be 'number'
+    count: string;
 }
 
 interface OrderRequestBody {
     ClientId: string;
-    RestaurantId:   string;
+    RestaurantId: string;
     items: MenuItem[];
 }
 
 
-const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) => {
-    const token = route.params?.token;
-    const restaurantId = route.params?.restaurant_id;
-    const client_id = route.params?.client_id; //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
+const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
+    const { token, ClientId } = useContext(Context);
+    const restaurantId = 158603712 //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
     const [restaurantData, setRestaurantData] = useState<any>(null);
     const [items, setItems] = useState<MenuItem[]>([]); // Fix: Update the initial state value to an empty array of type MenuItem[]
     const [hasAtLeastOne, setHasAtLeastOne] = useState(false);
@@ -48,13 +47,13 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
 
     const addMenuToItems = (menu: any) => {
         let newItems = [...items];
-        if(newItems.length === 0) {
-            setItems([{menuId:  menu.id.toString(), count: "1"}]);
+        if (newItems.length === 0) {
+            setItems([{ menuId: String(menu.id), count: "1" }]);
             return;
         }
-        for(let item of newItems){
-            if(item.menuId === menu.id.toString()){
-                item.count = (parseInt(item.count)+1).toString();
+        for (let item of newItems) {
+            if (item.menuId === String(menu.id)) {
+                item.count = String(Number(item.count) + 1);
                 setItems(newItems);
                 return;
             }
@@ -63,13 +62,13 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
 
     const removeMenuFromItems = (menu: any) => {
         let newItems = [...items];
-        if(newItems.length === 0) {
-            setItems([{menuId: (menu.id).toString(), count: "1"}]);
+        if (newItems.length === 0) {
+            setItems([{ menuId: String(menu.id), count: "1" }]);
             return;
         }
-        for(let item of newItems){
-            if(item.menuId === (menu.id).toString()){
-                item.count = (parseInt(item.count)-1).toString();;
+        for (let item of newItems) {
+            if (item.menuId === String(menu.id)) {
+                item.count = String(Number(item.count) - 1);
                 setItems(newItems);
                 return;
             }
@@ -79,18 +78,23 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
     const placeOrder = async () => {
         try {
             const requestBody: OrderRequestBody = {
-                ClientId: client_id,
-                RestaurantId: restaurantId.toString(),
+                ClientId: "945487980946653185",
+                RestaurantId: String(restaurantId),
                 items: items
             };
             const response = await axios.post(`${backendUrl}/order`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
+            }).then(response => {
+                Alert.alert("Commande passée", "Votre commande a bien été passée");
+                navigation.reset({
+                    index: 1,
+                    routes: [{ name: 'Home' }, {name:"Orders"}],
+                });
+            }).catch(error => {
+                console.error('Error placing order:', error);
             });
-            console.log('Order placed:', response.data);
-            Alert.alert("Commande passée", "Votre commande a bien été passée");
-            navigation.navigate('Orders', {client_id: client_id,  token: token });
         } catch (error) {
             console.error('Error placing order:', error);
         }
@@ -117,22 +121,23 @@ const Restaurant = ({ route, navigation }: { route: RouteProp<any>, navigation: 
                                 <View key={menu.id} style={styles.menuView}>
                                     <Text style={styles.text}>{menu.name}</Text>
                                     <Text style={styles.text}>Prix : {menu.price}</Text>
+                                    <Image source={{ uri: menu.url.String }} />
                                     <View style={{ flexDirection: "row" }}>
                                         <View style={styles.menuButtonView}>
                                             <Button disabled={!hasAtLeastOne} color="darkred" title='-'
                                                 onPress={() => {
-                                                    if (menuNumber === 1) {setHasAtLeastOne(false);}
+                                                    if (menuNumber === 1) { setHasAtLeastOne(false); }
                                                     setMenuNumber(menuNumber - 1);
                                                     removeMenuFromItems(menu);
                                                 }} />
                                         </View>
                                         <View style={styles.menuButtonView}>
                                             <Button color="#1355A2" title='+'
-                                                onPress={() => { 
+                                                onPress={() => {
                                                     setHasAtLeastOne(true);
                                                     setMenuNumber(menuNumber + 1);
                                                     addMenuToItems(menu);
-                                                     }} />
+                                                }} />
                                         </View>
                                     </View>
                                     <Text style={styles.text}>Dans le panier : {menuNumber}</Text>
@@ -206,7 +211,7 @@ const styles = StyleSheet.create({
         flex: 1,
         margin: 5,
         borderRadius: 100,
-        overflow: 'hidden' 
+        overflow: 'hidden'
     }
 });
 
