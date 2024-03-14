@@ -3,7 +3,7 @@ import axios from 'axios';
 const { backendUrl } = require('../config.ts');
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, Button, RefreshControl } from 'react-native'; // Supposez que vous utilisiez React Native
+import { Modal, StyleSheet, View, Text, ScrollView, Button, RefreshControl } from 'react-native'; // Supposez que vous utilisiez React Native
 import Context from '../Context';
 
 export default function Orders({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) {
@@ -12,6 +12,9 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
     const [restaurantNames, setRestaurantNames] = useState<{ [key: string]: string }>({});
     const [refreshing, setRefreshing] = React.useState(false);
     const [refreshAsked, setRefreshAsked] = useState(false);
+    const [collectCode, setCollectCode] = useState(0);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [noOrders, setNoOrders] = useState(false);
 
     const onRefresh = React.useCallback(() => {
         setRefreshing(true);
@@ -22,15 +25,22 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
 
     const fetchData = async () => {
         try {
+            setNoOrders(false);
             const response = await axios.get(`${backendUrl}/order/user/${ClientId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            setOrders(response.data["User orders"]); // Mettre à jour l'état avec les ordres récupérés
+            const orders = response.data["User orders"];
+            if (!orders) {
+                setNoOrders(true);
+                setRefreshing(false);
+                return;
+            }
+            setOrders(orders); // Mettre à jour l'état avec les ordres récupérés
             setRefreshing(false);
             let _restaurantNames: { [name: string]: string } = {};
-            for (const order of response.data["User orders"]) {
+            for (const order of orders) {
                 if (!_restaurantNames[order.restaurantId]) {
                     const name = await fetchRestaurantName(order.restaurantId);
                     _restaurantNames[order.restaurantId] = name;
@@ -62,7 +72,8 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
             }
         }).then(response => {
             console.log('Order picked:', response.data.Code);
-            navigation.navigate('Home');
+            setCollectCode(response.data.Code);
+            setModalVisible(true);
         })
             .catch(error => {
                 console.error('Error picking order:', error);
@@ -71,6 +82,22 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
 
     return (
         <View style={{ flex: 1 }}>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+                    <View style={{ backgroundColor: 'white', margin: 20, borderRadius: 10, flex: 0.35, width: "80%", alignItems: "center" }}>
+                        <Text numberOfLines={1} adjustsFontSizeToFit style={styles.collectCode}>{collectCode}</Text>
+                        <View style={{width:"80%"}}>
+                            <Button title="OK" color="#1355A2" onPress={() => { setModalVisible(false) }} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <View style={styles.title}>
                 <View style={styles.backButton}>
                     <Button color="#1355A2" onPress={() => { navigation.goBack() }} title="<" />
@@ -93,15 +120,16 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
                             );
                         })}
                         <Text style={styles.orderText}>Prix : {order.price}</Text>
-                        {order.status === "COMPLETED" ? <Button title="Récupérer la commande" color="#1355A2"
+                        {order.status === "PENDING" ? <Button title="Récupérer la commande" color="#1355A2"
                             onPress={pickOrder(order.id)} />
                             : null}
                         {/* Vous pouvez ajouter d'autres détails de la commande ici */}
                     </View>
                 ))
-                    : (Array.from({ length: 8 }).map((_, index: number) => (<View key={index} style={styles.orderContainer}>
-                        {/* Affichage durant le chargement */}
-                    </View>)))
+                    : (noOrders) ? (<Text style={{ color: "black" }}>NO ORDERS !</Text>)
+                        : (Array.from({ length: 8 }).map((_, index: number) => (<View key={index} style={styles.orderContainer}>
+                            {/* Affichage durant le chargement */}
+                        </View>)))
                 }
             </ScrollView>
         </View>
@@ -148,5 +176,11 @@ const styles = StyleSheet.create({
         position: "absolute",
         width: "18%",
     },
+    collectCode: {
+        fontSize: 200,
+        color: "black",
+        alignSelf: 'center',
+        margin: 50,
+    }
 });
 
