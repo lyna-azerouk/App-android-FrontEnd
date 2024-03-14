@@ -16,7 +16,8 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
     const onRefresh = React.useCallback(() => {
         setRefreshing(true);
         setRefreshAsked(!refreshAsked);
-        fetchData().then(() => setRefreshing(false));
+        setOrders([]);
+        fetchData();
     }, []);
 
     const fetchData = async () => {
@@ -27,6 +28,7 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
                 }
             });
             setOrders(response.data["User orders"]); // Mettre à jour l'état avec les ordres récupérés
+            setRefreshing(false);
             let _restaurantNames: { [name: string]: string } = {};
             for (const order of response.data["User orders"]) {
                 if (!_restaurantNames[order.restaurantId]) {
