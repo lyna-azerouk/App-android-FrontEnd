@@ -32,6 +32,7 @@ const requestLocationPermission = async () => {
 
 export default function Home({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) {
     const token = route.params?.token;
+    const id =route.params?.id;
     const [restaurants, setRestaurants] = useState<any[]>([]);
     const [location, setLocation] = useState<any>(null);
     const [refreshing, setRefreshing] = React.useState(false);
@@ -98,12 +99,13 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.container}>
             <View style={styles.container}>
                 <View>
+                <Text style={styles.container}>User Id : {id}</Text>
                     <Text style={styles.header}>Liste des restaurants:</Text>
                     {restaurants.map(restaurant => (restaurant.tags.name) ? (
                         <View key={restaurant.id} style={styles.restaurantContainer}>
                             <Button color="#1355A2" title={restaurant.tags.name}
                                 onPress={() => {
-                                    navigation.navigate('Restaurant', { id: restaurant.id, token: token });
+                                    navigation.navigate('Restaurant', { client_id: id,  restaurant_id: restaurant.id, token: token });
                                 }} />
                         </View>
                     ) : null
@@ -112,7 +114,7 @@ export default function Home({ route, navigation }: { route: RouteProp<any>, nav
                 </View>
                 <Button color="#1355A2" title={"Mes commandes"}
                     onPress={() => {
-                        navigation.navigate('Orders', {token: token });
+                        navigation.navigate('Orders', {client_id: id, token: token });
                     }} />
             </View>
         </ScrollView>

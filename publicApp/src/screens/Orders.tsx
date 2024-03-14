@@ -3,16 +3,17 @@ import axios from 'axios';
 const { backendUrl } = require('../config.ts');
 import { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native'; // Supposez que vous utilisiez React Native
+import {StyleSheet, View, Text } from 'react-native'; // Supposez que vous utilisiez React Native
 
 export default function Orders({ route }: { route: RouteProp<any> }) {
     const token = route.params?.token;
+    const client_id = route.params?.client_id; 
     const [orders, setOrders] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`${backendUrl}/order/user/945487980946653185`, {
+                const response = await axios.get(`${backendUrl}/order/user/${client_id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -27,19 +28,45 @@ export default function Orders({ route }: { route: RouteProp<any> }) {
         fetchData();
     }, [token]);
 
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            padding: 10,
+            backgroundColor: '#fff',
+        },
+        title: {
+            fontSize: 20,
+            fontWeight: 'bold',
+        },
+        orderContainer: {
+            marginBottom: 20,
+            padding: 10,
+            backgroundColor: '#f8f8f8',
+        },
+        orderText: {
+            fontSize: 16,
+        },
+        itemContainer: {
+            marginBottom: 10,
+        },
+        itemText: {
+            fontSize: 14,
+        },
+    });
+
     return (
-        <View>
-            <Text>Orders:</Text>
+        <View style={styles.container}>
+            <Text style={styles.title}>Orders:</Text>
             {orders.map((order: any, index: number) => (
-                <View key={index} style={{ marginBottom: 20 }}>
-                    <Text>Order Date: {order.date}</Text>
-                    <Text>Restaurant ID: {order.restaurantId}</Text>
-                    <Text>Status: {order.status}</Text>
+                <View key={index} style={styles.orderContainer}>
+                    <Text style={styles.orderText}>Order Date: {order.date}</Text>
+                    <Text style={styles.orderText}>Restaurant ID: {order.restaurantId}</Text>
+                    <Text style={styles.orderText}>Status: {order.status}</Text>
                     {order.items && order.items.map((item: any, index: number) => {
                         return (
-                            <View key={index} style={{ marginBottom: 20 }}>
-                                <Text>Menu ID: {item.menuId}</Text> {/* Rajouter une route qui recupère les information de chaque menus via son Id */}      
-                                <Text>Quantity: {item.count}</Text>
+                            <View key={index} style={styles.itemContainer}>
+                                <Text style={styles.itemText}>Menu ID: {item.menuId}</Text>
+                                <Text style={styles.itemText}>Quantity: {item.count}</Text>
                             </View>
                         );
                     })}
@@ -49,3 +76,5 @@ export default function Orders({ route }: { route: RouteProp<any> }) {
         </View>
     );
 }
+
+    

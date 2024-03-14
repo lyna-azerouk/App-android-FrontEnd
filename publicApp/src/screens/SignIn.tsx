@@ -18,8 +18,9 @@ export default function SignIn({ navigation }: { navigation: NavigationProp<any>
             axios.post(backendUrl+'/auth/client', formData)
                 .then(response => {
                     const token = response.data.token;
+                    const id = response.data.id;
                     console.log(response.data);  //To do: get the id  (the id is equal to nil) 
-                    navigation.navigate("Home", { token: token })
+                    navigation.navigate("Home", {id: id,  token: token })
                 })
                 .catch(error => {
                     console.error("Authentification failed", error);
