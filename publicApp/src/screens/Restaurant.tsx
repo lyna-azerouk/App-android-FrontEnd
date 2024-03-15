@@ -78,7 +78,7 @@ const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
     const placeOrder = async () => {
         try {
             const requestBody: OrderRequestBody = {
-                ClientId: "945487980946653185",
+                ClientId: ClientId,
                 RestaurantId: String(restaurantId),
                 items: items
             };
