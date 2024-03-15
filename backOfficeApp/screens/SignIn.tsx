@@ -11,7 +11,6 @@ import {
 import {NavigationProp} from '@react-navigation/native';
 const {backendUrl} = require('../config.ts');
 import axios from 'axios';
-import {Home} from './Home.tsx';
 
 export default function SignIn({
   navigation,
@@ -32,7 +31,7 @@ export default function SignIn({
         .post(backendUrl + '/auth/restaurant', formData)
         .then(response => {
           const token = response.data.token;
-          navigation.navigate('Home', {token: token});
+          navigation.navigate('Orders', {token: token});
         })
         .catch(error => {
           console.error('Authentification failed', error);
@@ -58,6 +57,7 @@ export default function SignIn({
           onChangeText={setId}
           style={styles.input}
           placeholder="ID"
+          keyboardType="numeric"
         />
         <TextInput
           value={password}
@@ -65,6 +65,7 @@ export default function SignIn({
           style={styles.input}
           secureTextEntry={true}
           placeholder="Mot de passe"
+          keyboardType="numeric"
         />
         <TouchableHighlight
           underlayColor="darkred"
