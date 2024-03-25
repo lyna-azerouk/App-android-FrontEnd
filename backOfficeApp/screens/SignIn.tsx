@@ -11,6 +11,7 @@ import {
 import {NavigationProp} from '@react-navigation/native';
 const {backendUrl} = require('../config.ts');
 import axios from 'axios';
+import Context from '../components/Context';
 
 export default function SignIn({
   navigation,
@@ -19,6 +20,8 @@ export default function SignIn({
 }) {
   const [id, setId] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const {token, updateToken, RestaurantId, updateRestaurantId} =
+    React.useContext(Context);
 
   const sendSignInForm = () => {
     const numericId = parseInt(id, 10);
@@ -30,8 +33,9 @@ export default function SignIn({
       axios
         .post(backendUrl + '/auth/restaurant', formData)
         .then(response => {
-          const token = response.data.token;
-          navigation.navigate('Orders', {token: token});
+          updateToken(response.data.token);
+          updateRestaurantId(RestaurantId);
+          navigation.navigate('Orders', {token: response.data.token});
         })
         .catch(error => {
           console.error('Authentification failed', error);
@@ -39,6 +43,10 @@ export default function SignIn({
     } else {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
     }
+  };
+
+  const handleSignIn = id => {
+    navigation.navigate('Orders', {id: id});
   };
 
   return (

@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+import axios from 'axios';
+import React, {useContext, useEffect, useState} from 'react';
 import {Button} from 'react-native';
 import {
   View,
@@ -9,32 +10,55 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import Context from '../components/Context';
+const {backendUrl} = require('../config.ts');
 
-/* DATA WITHOUT CONNECTING TO DB */
 enum Status {
-  ENATTENTE = 'En Attente',
-  ENCOURS = 'En Cours',
-  PRET = 'Pret',
-  COLLECTE = 'Collecté',
+  ENATTENTE = 'PENDING',
+  ENCOURS = 'INPROGRESS',
+  PRET = 'READY',
+  COLLECTE = 'COMPLETED',
 }
 
-const initialOrders = [
-  {
-    order_id: 13865835,
-    client_name: 'Abou',
-    statut: Status.ENATTENTE,
-    price: 10,
-  },
-  {order_id: 23543545, client_name: 'Lyna', statut: Status.ENCOURS, price: 15},
-  {order_id: 53526256, client_name: 'Léo', statut: Status.PRET, price: 20},
-  {order_id: 87875576, client_name: 'Joumana', statut: Status.PRET, price: 20},
-  {order_id: 79808675, client_name: 'STL', statut: Status.ENATTENTE, price: 8},
-];
-/* TO DELETE */
-
-const Orders = () => {
-  const [orders, setOrders] = useState(initialOrders);
+const Orders = ({route}) => {
+  const {token} = route.params;
+  const {RestaurantId} = useContext(Context);
+  const [orders, setOrders] = useState([]);
   const [isOpen, setIsOpen] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `${backendUrl}/order/restaurant/${RestaurantId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        console.log(token);
+        const fetchedOrders = response.data['Restaurant orders'];
+        setOrders(fetchedOrders);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, [RestaurantId, token]);
+
+  const fetchRestaurantName = async (restaurantId: string) => {
+    const response = await axios.get(
+      `${backendUrl}/restaurant/${restaurantId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    return response.data.restaurant.restaurantDetails.tags.name;
+  };
 
   const handleMenuPress = () => {
     console.log('Menu pressed');
@@ -59,30 +83,50 @@ const Orders = () => {
     );
   };
 
-  const handleConfirm = orderId => {
-    const updatedOrders = orders.map(order => {
-      if (order.order_id === orderId) {
-        return {
-          ...order,
-          statut: Status.ENCOURS,
-        };
+  const handleConfirm = async orderId => {
+    try {
+      const response = await axios.patch(
+        `${backendUrl}/order/accept/${orderId}`,
+        {
+          status: Status.ENCOURS,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.status === 200) {
+        const updatedOrders = orders.map(order => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status: Status.ENCOURS,
+            };
+          } else {
+            return order;
+          }
+        });
+
+        setOrders(updatedOrders);
       }
-      return order;
-    });
-    setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Failed to update order status', error);
+    }
   };
 
   const handleDecline = orderId => {
-    const updatedOrders = orders.filter(order => order.order_id !== orderId);
+    const updatedOrders = orders.filter(order => order.id !== orderId);
     setOrders(updatedOrders);
   };
 
   const handleReady = orderId => {
     const updatedOrders = orders.map(order => {
-      if (order.order_id === orderId) {
+      if (order.id === orderId) {
         return {
           ...order,
-          statut: Status.PRET,
+          status: Status.PRET,
         };
       }
       return order;
@@ -92,10 +136,10 @@ const Orders = () => {
 
   const handleCollect = orderId => {
     const updatedOrders = orders.map(order => {
-      if (order.order_id === orderId) {
+      if (order.id === orderId) {
         return {
           ...order,
-          statut: Status.COLLECTE,
+          status: Status.COLLECTE,
         };
       }
       return order;
@@ -128,39 +172,39 @@ const Orders = () => {
           <Text style={styles.headerText}>Prix</Text>
           <Text style={styles.headerText}>Action</Text>
         </View>
-        {orders.map(order => (
-          <View key={order.order_id} style={styles.orderItem}>
-            <Text style={styles.orderItemText}>{order.order_id}</Text>
-            <Text style={styles.orderItemText}>{order.client_name}</Text>
-            <Text style={styles.orderItemText}>{order.statut}</Text>
+        {orders.map((order: any, index: number) => (
+          <View key={index} style={styles.orderItem}>
+            <Text style={styles.orderItemText}>{order.id}</Text>
+            <Text style={styles.orderItemText}>{order.clientId}</Text>
+            <Text style={styles.orderItemText}>{order.status}</Text>
             <Text style={styles.orderItemText}>{order.price} €</Text>
 
             <View style={[styles.orderItemText, styles.buttonsContainer]}>
-              {order.statut === Status.ENATTENTE && (
+              {order.status === Status.ENATTENTE && (
                 <TouchableOpacity
                   style={[styles.buttonConfirm, {backgroundColor: 'green'}]}
-                  onPress={() => handleConfirm(order.order_id)}>
+                  onPress={() => handleConfirm(order.id)}>
                   <Text style={styles.buttonText}>✓</Text>
                 </TouchableOpacity>
               )}
-              {order.statut === Status.ENATTENTE && (
+              {order.status === Status.ENATTENTE && (
                 <TouchableOpacity
                   style={[styles.buttonConfirm, {backgroundColor: 'red'}]}
-                  onPress={() => handleDecline(order.order_id)}>
+                  onPress={() => handleDecline(order.id)}>
                   <Text style={styles.buttonText}>✗</Text>
                 </TouchableOpacity>
               )}
-              {order.statut === Status.ENCOURS && (
+              {order.status === Status.ENCOURS && (
                 <TouchableOpacity
                   style={[styles.button, {backgroundColor: 'orange'}]}
-                  onPress={() => handleReady(order.order_id)}>
+                  onPress={() => handleReady(order.id)}>
                   <Text style={styles.buttonText}>Pret</Text>
                 </TouchableOpacity>
               )}
-              {order.statut === Status.PRET && (
+              {order.status === Status.PRET && (
                 <TouchableOpacity
                   style={[styles.button, {backgroundColor: '#03428C'}]}
-                  onPress={() => handleCollect(order.order_id)}>
+                  onPress={() => handleCollect(order.id)}>
                   <Text style={styles.buttonText}>Collecte</Text>
                 </TouchableOpacity>
               )}
