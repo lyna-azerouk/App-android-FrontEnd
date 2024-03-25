@@ -15,7 +15,7 @@ const {backendUrl} = require('../config.ts');
 
 enum Status {
   ENATTENTE = 'PENDING',
-  ENCOURS = 'INPROGRESS',
+  ENCOURS = 'IN_PROGRESS',
   PRET = 'READY',
   COLLECTE = 'COMPLETED',
 }
@@ -25,10 +25,12 @@ const Orders = ({route}) => {
   const {RestaurantId} = useContext(Context);
   const [orders, setOrders] = useState([]);
   const [isOpen, setIsOpen] = useState(true);
+  const [noOrders, setNoOrders] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setNoOrders(false);
         const response = await axios.get(
           `${backendUrl}/order/restaurant/${RestaurantId}`,
           {
@@ -37,8 +39,11 @@ const Orders = ({route}) => {
             },
           },
         );
-        console.log(token);
         const fetchedOrders = response.data['Restaurant orders'];
+        if (!fetchedOrders) {
+          setNoOrders(true);
+          return;
+        }
         setOrders(fetchedOrders);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -116,35 +121,91 @@ const Orders = ({route}) => {
     }
   };
 
-  const handleDecline = orderId => {
-    const updatedOrders = orders.filter(order => order.id !== orderId);
-    setOrders(updatedOrders);
+  const handleDecline = async orderId => {
+    try {
+      const response = await axios.patch(
+        `${backendUrl}/order/complete/${orderId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.status === 200) {
+        const updatedOrders = orders.filter(order => order.id !== orderId);
+        setOrders(updatedOrders);
+      }
+    } catch (error) {
+      console.error('Failed to delete order', error);
+    }
   };
 
-  const handleReady = orderId => {
-    const updatedOrders = orders.map(order => {
-      if (order.id === orderId) {
-        return {
-          ...order,
+  const handleReady = async orderId => {
+    try {
+      const response = await axios.patch(
+        `${backendUrl}/order/ready/${orderId}`,
+        {
           status: Status.PRET,
-        };
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.status === 200) {
+        const updatedOrders = orders.map(order => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status: Status.PRET,
+            };
+          } else {
+            return order;
+          }
+        });
+
+        setOrders(updatedOrders);
       }
-      return order;
-    });
-    setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Failed to update order status', error);
+    }
   };
 
-  const handleCollect = orderId => {
-    const updatedOrders = orders.map(order => {
-      if (order.id === orderId) {
-        return {
-          ...order,
+  const handleCollect = async orderId => {
+    try {
+      const response = await axios.patch(
+        `${backendUrl}/order/complete/${orderId}`,
+        {
           status: Status.COLLECTE,
-        };
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.status === 200) {
+        const updatedOrders = orders.map(order => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status: Status.COLLECTE,
+            };
+          } else {
+            return order;
+          }
+        });
+
+        setOrders(updatedOrders);
       }
-      return order;
-    });
-    setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Failed to update order status', error);
+    }
   };
 
   return (
@@ -172,45 +233,55 @@ const Orders = ({route}) => {
           <Text style={styles.headerText}>Prix</Text>
           <Text style={styles.headerText}>Action</Text>
         </View>
-        {orders.map((order: any, index: number) => (
-          <View key={index} style={styles.orderItem}>
-            <Text style={styles.orderItemText}>{order.id}</Text>
-            <Text style={styles.orderItemText}>{order.clientId}</Text>
-            <Text style={styles.orderItemText}>{order.status}</Text>
-            <Text style={styles.orderItemText}>{order.price} €</Text>
+        {orders.length > 0 ? (
+          orders.map((order: any, index: number) => (
+            <View key={index} style={styles.orderItem}>
+              <Text style={styles.orderItemText}>{order.id}</Text>
+              <Text style={styles.orderItemText}>{order.clientId}</Text>
+              <Text style={styles.orderItemText}>{order.status}</Text>
+              <Text style={styles.orderItemText}>{order.price} €</Text>
 
-            <View style={[styles.orderItemText, styles.buttonsContainer]}>
-              {order.status === Status.ENATTENTE && (
-                <TouchableOpacity
-                  style={[styles.buttonConfirm, {backgroundColor: 'green'}]}
-                  onPress={() => handleConfirm(order.id)}>
-                  <Text style={styles.buttonText}>✓</Text>
-                </TouchableOpacity>
-              )}
-              {order.status === Status.ENATTENTE && (
-                <TouchableOpacity
-                  style={[styles.buttonConfirm, {backgroundColor: 'red'}]}
-                  onPress={() => handleDecline(order.id)}>
-                  <Text style={styles.buttonText}>✗</Text>
-                </TouchableOpacity>
-              )}
-              {order.status === Status.ENCOURS && (
-                <TouchableOpacity
-                  style={[styles.button, {backgroundColor: 'orange'}]}
-                  onPress={() => handleReady(order.id)}>
-                  <Text style={styles.buttonText}>Pret</Text>
-                </TouchableOpacity>
-              )}
-              {order.status === Status.PRET && (
-                <TouchableOpacity
-                  style={[styles.button, {backgroundColor: '#03428C'}]}
-                  onPress={() => handleCollect(order.id)}>
-                  <Text style={styles.buttonText}>Collecte</Text>
-                </TouchableOpacity>
-              )}
+              <View style={[styles.orderItemText, styles.buttonsContainer]}>
+                {order.status === Status.ENATTENTE && (
+                  <TouchableOpacity
+                    style={[styles.buttonConfirm, {backgroundColor: 'green'}]}
+                    onPress={() => handleConfirm(order.id)}>
+                    <Text style={styles.buttonText}>✓</Text>
+                  </TouchableOpacity>
+                )}
+                {order.status === Status.ENATTENTE && (
+                  <TouchableOpacity
+                    style={[styles.buttonConfirm, {backgroundColor: 'red'}]}
+                    onPress={() => handleDecline(order.id)}>
+                    <Text style={styles.buttonText}>✗</Text>
+                  </TouchableOpacity>
+                )}
+                {order.status === Status.ENCOURS && (
+                  <TouchableOpacity
+                    style={[styles.button, {backgroundColor: 'orange'}]}
+                    onPress={() => handleReady(order.id)}>
+                    <Text style={styles.buttonText}>Pret</Text>
+                  </TouchableOpacity>
+                )}
+                {order.status === Status.PRET && (
+                  <TouchableOpacity
+                    style={[styles.button, {backgroundColor: '#03428C'}]}
+                    onPress={() => handleCollect(order.id)}>
+                    <Text style={styles.buttonText}>Collecte</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
+          ))
+        ) : noOrders ? (
+          <Text style={{color: 'black'}}>NO ORDERS !</Text>
+        ) : (
+          Array.from({length: 8}).map((_, index: number) => (
+            <View key={index} style={styles.orderItem}>
+              {/* Affichage durant le chargement */}
+            </View>
+          ))
+        )}
       </ScrollView>
       <View style={styles.menu}>
         <Button
