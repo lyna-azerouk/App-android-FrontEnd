@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, {useContext, useEffect, useState} from 'react';
-import {Button} from 'react-native';
+import {Button, RefreshControl} from 'react-native';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import Context from '../components/Context';
 const {backendUrl} = require('../config.ts');
@@ -26,32 +27,85 @@ const Orders = ({route}) => {
   const [orders, setOrders] = useState([]);
   const [isOpen, setIsOpen] = useState(true);
   const [noOrders, setNoOrders] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [clientNames, setClientNames] = useState({});
+  const [affluenceModalVisible, setAffluenceModalVisible] = useState(false);
+  const [selectedOption, setSelectedOption] = useState('Affluence');
+  const [buttonColor, setButtonColor] = useState('blue');
+
+  const fetchData = async () => {
+    try {
+      setNoOrders(false);
+      const response = await axios.get(
+        `${backendUrl}/order/restaurant/${RestaurantId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const fetchedOrders = response.data.orders;
+      if (!fetchedOrders) {
+        setNoOrders(true);
+        return;
+      }
+      setOrders(fetchedOrders);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const updateAffluence = async (level: string) => {
+    try {
+      await axios.patch(
+        `${backendUrl}/restaurant/affluence/${RestaurantId}/${level}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+    } catch (error) {
+      console.error('Error updating affluence:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setNoOrders(false);
-        const response = await axios.get(
-          `${backendUrl}/order/restaurant/${RestaurantId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-        const fetchedOrders = response.data['Restaurant orders'];
-        if (!fetchedOrders) {
-          setNoOrders(true);
-          return;
+    const fetchClientNames = async () => {
+      const newClientNames = {...clientNames};
+
+      for (const order of orders) {
+        if (!newClientNames[order.clientId]) {
+          try {
+            const response = await axios.get(
+              `${backendUrl}/client/${order.clientId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            );
+            newClientNames[order.clientId] =
+              response.data.body.firstName + ' ' + response.data.body.lastName;
+          } catch (error) {
+            console.error('Error fetching client name:', error);
+          }
         }
-        setOrders(fetchedOrders);
-      } catch (error) {
-        console.error('Error fetching data:', error);
       }
+
+      setClientNames(newClientNames);
     };
 
+    fetchClientNames();
     fetchData();
   }, [RestaurantId, token]);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    // Fetch your data here, for example, by calling a function to fetch orders
+    fetchData().then(() => setRefreshing(false));
+  }, []);
 
   const fetchRestaurantName = async (restaurantId: string) => {
     const response = await axios.get(
@@ -67,6 +121,32 @@ const Orders = ({route}) => {
 
   const handleMenuPress = () => {
     console.log('Menu pressed');
+  };
+
+  const handleAffluencePress = () => {
+    setAffluenceModalVisible(true);
+  };
+
+  const handleAffluence = option => {
+    setSelectedOption(option);
+
+    switch (option) {
+      case 'LOW':
+        setButtonColor('green');
+        break;
+      case 'MODERATE':
+        setButtonColor('orange');
+        break;
+      case 'HIGH':
+        setButtonColor('red');
+        break;
+      default:
+        setButtonColor('blue');
+    }
+
+    updateAffluence(option);
+
+    setAffluenceModalVisible(false);
   };
 
   const handleOpenClose = () => {
@@ -215,7 +295,11 @@ const Orders = ({route}) => {
         style={styles.headerImage}
       />
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
         <View style={styles.menuContainer}>
           <TouchableOpacity onPress={handleMenuPress}>
             <Image
@@ -237,10 +321,11 @@ const Orders = ({route}) => {
           orders.map((order: any, index: number) => (
             <View key={index} style={styles.orderItem}>
               <Text style={styles.orderItemText}>{order.id}</Text>
-              <Text style={styles.orderItemText}>{order.clientId}</Text>
+              <Text style={styles.orderItemText}>
+                {clientNames[order.clientId]}
+              </Text>
               <Text style={styles.orderItemText}>{order.status}</Text>
               <Text style={styles.orderItemText}>{order.price} €</Text>
-
               <View style={[styles.orderItemText, styles.buttonsContainer]}>
                 {order.status === Status.ENATTENTE && (
                   <TouchableOpacity
@@ -289,7 +374,63 @@ const Orders = ({route}) => {
           onPress={handleOpenClose}
           color={isOpen ? 'green' : 'red'}
         />
-        <Text>Affluence ||</Text>
+        <Button
+          title={selectedOption}
+          onPress={handleAffluencePress}
+          color={buttonColor}
+        />
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={affluenceModalVisible}
+          onRequestClose={() => {
+            setAffluenceModalVisible(!affluenceModalVisible);
+          }}>
+          <View
+            style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <View
+              style={{backgroundColor: 'white', padding: 20, borderRadius: 10}}>
+              <Text style={{fontSize: 20, marginBottom: 20}}>
+                Sélectionnez votre affluence
+              </Text>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'green',
+                  padding: 10,
+                  borderRadius: 5,
+                  marginBottom: 10,
+                }}
+                onPress={() => handleAffluence('LOW')}>
+                <Text style={{color: 'white'}}>LOW</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'orange',
+                  padding: 10,
+                  borderRadius: 5,
+                  marginBottom: 10,
+                }}
+                onPress={() => handleAffluence('MODERATE')}>
+                <Text style={{color: 'white'}}>MODERATE</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'red',
+                  padding: 10,
+                  borderRadius: 5,
+                  marginBottom: 10,
+                }}
+                onPress={() => handleAffluence('HIGH')}>
+                <Text style={{color: 'white'}}>HIGH</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{backgroundColor: 'gray', padding: 10, borderRadius: 5}}
+                onPress={() => setAffluenceModalVisible(false)}>
+                <Text style={{color: 'white'}}>EXIT</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         <Text>RestaurantNom</Text>
       </View>
     </View>
