@@ -77,7 +77,14 @@ const Orders = ({route}) => {
   };
 
   useEffect(() => {
+    // Fetch data initially
     fetchData();
+
+    // Set interval to fetch data every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+
+    // Clear interval on component unmount to prevent memory leaks
+    return () => clearInterval(interval);
   }, [RestaurantId, token]);
 
   useEffect(() => {
