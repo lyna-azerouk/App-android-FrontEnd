@@ -19,14 +19,14 @@ export default function OnBoarding({
       source={require('../assets/home_image.jpg')}
       style={styles.backgroundImage}>
       <View style={styles.container}>
-        <TouchableHighlight
+        {/* <TouchableHighlight
           style={styles.button}
           onPress={() => {
             navigation.navigate('Register');
           }}
           underlayColor="darkred">
           <Text style={styles.buttonText}>INSCRIPTION</Text>
-        </TouchableHighlight>
+        </TouchableHighlight> */}
 
         <TouchableHighlight
           underlayColor="darkred"

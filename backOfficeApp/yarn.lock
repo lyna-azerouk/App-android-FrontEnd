@@ -3321,6 +3321,11 @@ eslint-plugin-react-hooks@^4.6.0:
   resolved "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-4.6.0.tgz"
   integrity sha512-oFc7Itz9Qxh2x4gNHStv3BqJq54ExXmfC+a1NjAta66IAN87Wu0R/QArgIS9qKzX3dXKPI9H5crl9QchNMY9+g==
 
+eslint-plugin-react-hooks@^5.1.0-canary-95e6f032c-20240401:
+  version "5.1.0-canary-95e6f032c-20240401"
+  resolved "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-5.1.0-canary-95e6f032c-20240401.tgz"
+  integrity sha512-EIWYOdtqJTURJIqxS/wg24T6hve55cPOIQDU78Tbg2Vv4A4SimBxEAAlkdUabwpESThtqEXW3dKD+ydWqyPBEQ==
+
 eslint-plugin-react-native-globals@^0.1.1:
   version "0.1.2"
   resolved "https://registry.npmjs.org/eslint-plugin-react-native-globals/-/eslint-plugin-react-native-globals-0.1.2.tgz"
