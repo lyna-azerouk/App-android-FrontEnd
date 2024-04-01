@@ -7,24 +7,32 @@ import Context from '../Context';
 const { backendUrl } = require('../config.ts');
 
 interface MenuItem {
-    menuId: string;
-    count: string;
+    menuId: number;
+    count: number;
 }
 
 interface OrderRequestBody {
-    ClientId: string;
-    RestaurantId: string;
+    ClientId: number;
+    RestaurantId: number;
     items: MenuItem[];
 }
 
 
-const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
+const Restaurant = ({ navigation, route }: { navigation: NavigationProp<any>, route: RouteProp<any> }) => {
     const { token, ClientId } = useContext(Context);
-    const restaurantId = 158603712 //route.params?.id; EN DUR POUR DEBUG (The Village Terrazza)
+    //const restaurantId = 158603712; EN DUR POUR DEBUG (The Village Terrazza)
+    const restaurantId = route.params?.restaurant_id;
     const [restaurantData, setRestaurantData] = useState<any>(null);
     const [items, setItems] = useState<MenuItem[]>([]); // Fix: Update the initial state value to an empty array of type MenuItem[]
     const [hasAtLeastOne, setHasAtLeastOne] = useState(false);
     const [menuNumber, setMenuNumber] = useState(0);
+    const [affluenceActuelle, setAffluence] = useState("faible");
+
+    const updateAffluence = (affluence: string) => {
+        if(affluence==="LOW") setAffluence("faible");
+        else if(affluence==="MODERATE") setAffluence("moyenne");
+        else setAffluence("forte");
+    }
 
 
     useEffect(() => {
@@ -36,7 +44,14 @@ const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
                         Authorization: `Bearer ${token}`
                     }
                 });
+                const getAffluence = await axios.get(`${backendUrl}/affluence/${restaurantId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                console.log(response.data);
                 setRestaurantData(response.data.restaurant);
+                updateAffluence(getAffluence.data.Affluence);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -47,41 +62,42 @@ const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
 
     const addMenuToItems = (menu: any) => {
         let newItems = [...items];
-        if (newItems.length === 0) {
-            setItems([{ menuId: String(menu.id), count: "1" }]);
-            return;
-        }
+        let found = false;
         for (let item of newItems) {
-            if (item.menuId === String(menu.id)) {
-                item.count = String(Number(item.count) + 1);
-                setItems(newItems);
-                return;
-            }
+          if (item.menuId === menu.id) {
+            item.count = (item.count) + 1;
+            found = true;
+            break;
+          }
         }
-    }
-
-    const removeMenuFromItems = (menu: any) => {
+        if (!found) {
+          newItems.push({ menuId: menu.id, count: 1 });
+        }
+        setItems(newItems);
+      }
+      
+      const removeMenuFromItems = (menu: any) => {
         let newItems = [...items];
-        if (newItems.length === 0) {
-            setItems([{ menuId: String(menu.id), count: "1" }]);
-            return;
-        }
         for (let item of newItems) {
-            if (item.menuId === String(menu.id)) {
-                item.count = String(Number(item.count) - 1);
-                setItems(newItems);
-                return;
+          if (item.menuId === menu.id) {
+            item.count = String(Number(item.count) - 1);
+            if (Number(item.count) === 0) {
+              newItems = newItems.filter(i => i.menuId !== menu.id);
             }
+            break;
+          }
         }
-    }
+        setItems(newItems);
+      }
 
     const placeOrder = async () => {
         try {
             const requestBody: OrderRequestBody = {
                 ClientId: ClientId,
-                RestaurantId: String(restaurantId),
+                RestaurantId: restaurantId,
                 items: items
             };
+            console.log("place order request:",requestBody);
             const response = await axios.post(`${backendUrl}/order`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -116,15 +132,15 @@ const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
                             <Image source={{ uri: "https://images.assetsdelivery.com/compings_v2/luka007/luka0071601/luka007160100612.jpg" }}
                                 style={{ borderRadius: 100 }} />
                             <Text style={styles.text}>Durée moyenne d'une commande : {restaurantData.order_average_duration} minutes</Text>
+                            <Text style={styles.text}>À l'heure actuelle, l'affluence dans le restaurant est {affluenceActuelle}.</Text>
                             <Text style={styles.text}>Menus :</Text>
                             {restaurantData.menus.map((menu: any) => (
                                 <View key={menu.id} style={styles.menuView}>
                                     <Text style={styles.text}>{menu.name}</Text>
                                     <Text style={styles.text}>Prix : {menu.price}</Text>
-                                    <Image source={{ uri: menu.url.String }} />
                                     <View style={{ flexDirection: "row" }}>
                                         <View style={styles.menuButtonView}>
-                                            <Button disabled={!hasAtLeastOne} color="darkred" title='-'
+                                            <Button disabled={!items.find(item => item.menuId === menu.id)} color="darkred" title='-'
                                                 onPress={() => {
                                                     if (menuNumber === 1) { setHasAtLeastOne(false); }
                                                     setMenuNumber(menuNumber - 1);
@@ -140,7 +156,7 @@ const Restaurant = ({ navigation }: { navigation: NavigationProp<any> }) => {
                                                 }} />
                                         </View>
                                     </View>
-                                    <Text style={styles.text}>Dans le panier : {menuNumber}</Text>
+                                    <Text style={styles.text}>Dans le panier : {items.find(item => item.menuId === menu.id)?.count || 0}</Text>
                                 </View>
                             ))}
                         </ScrollView>

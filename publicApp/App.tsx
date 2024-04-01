@@ -13,15 +13,15 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [token, setToken] = useState("");
-  const [ClientId, setClientId] = useState("949732840014675969");
+  const [ClientId, setClientId] = useState("");
   const updateToken = (newToken: string) => {
     setToken(newToken);
   }
-  const updateClientId = (newClientId: string) => {
+  const updateClientId = (newClientId: number) => {
     setClientId(newClientId);
   }
   return (
-    <Context.Provider value={{ token, updateToken, ClientId: "949732840014675969", updateClientId }}>
+    <Context.Provider value={{ token, updateToken, ClientId, updateClientId }}>
       <NavigationContainer>
         {token.length === 0 ? (
           <Stack.Navigator screenOptions={{

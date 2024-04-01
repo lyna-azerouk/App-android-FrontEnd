@@ -28,7 +28,7 @@ export default function SignIn({ navigation }: { navigation: NavigationProp<any>
             axios.post(backendUrl+'/auth/client', formData)
                 .then(response => {
                     updateToken(response.data.token);
-                    updateClientId(ClientId);
+                    updateClientId(response.data.id);
                     //navigation.navigate("Home", { token: token })
                 })
                 .catch(error => {

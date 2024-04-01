@@ -3,7 +3,7 @@ import axios from 'axios';
 const { backendUrl } = require('../config.ts');
 import { NavigationProp, RouteProp } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from 'react';
-import { Modal, StyleSheet, View, Text, ScrollView, Button, RefreshControl } from 'react-native'; // Supposez que vous utilisiez React Native
+import { Modal, StyleSheet, View, Text, ScrollView, Button, RefreshControl } from 'react-native';
 import Context from '../Context';
 
 export default function Orders({ route, navigation }: { route: RouteProp<any>, navigation: NavigationProp<any> }) {
@@ -15,6 +15,8 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
     const [collectCode, setCollectCode] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [noOrders, setNoOrders] = useState(false);
+    const [hasObtainedOrder, setObtainedOrder] = useState(false);
+    const [currentResto, setCurrentResto] = useState(0);
 
     const onRefresh = React.useCallback(() => {
         setRefreshing(true);
@@ -39,7 +41,7 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
             }
             setOrders(orders); // Mettre à jour l'état avec les ordres récupérés
             setRefreshing(false);
-            let _restaurantNames: { [name: string]: string } = {};
+            let _restaurantNames: { [name: string]: string } = restaurantNames;
             for (const order of orders) {
                 if (!_restaurantNames[order.restaurantId]) {
                     const name = await fetchRestaurantName(order.restaurantId);
@@ -65,7 +67,8 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
         return response.data.restaurant.restaurantDetails.tags.name;
     }
 
-    const pickOrder = (orderId: string) => async () => {
+    const pickOrder = (orderId: string, restaurantId: number) => async () => {
+        setObtainedOrder(false);
         axios.get(`${backendUrl}/order/pick/${orderId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -73,10 +76,32 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
         }).then(response => {
             console.log('Order picked:', response.data.Code);
             setCollectCode(response.data.Code);
+            setCurrentResto(restaurantId);
             setModalVisible(true);
         })
             .catch(error => {
                 console.error('Error picking order:', error);
+            });
+    }
+
+    const voteAffluence = (affluence: string) => {
+        const restaurantId = currentResto;
+        console.log('Voting affluence:', affluence, restaurantId)
+        axios.patch(`${backendUrl}/client/affluence/${restaurantId}/${affluence}`, {
+            affluence: affluence
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }).then(response => {
+            console.log('Affluence voted:', response.data);
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+            });
+        })
+            .catch(error => {
+                console.error('Error voting affluence:', error);
             });
     }
 
@@ -89,15 +114,35 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
                 onRequestClose={() => {
                     setModalVisible(!modalVisible);
                 }}>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                    <View style={{ backgroundColor: 'white', margin: 20, borderRadius: 10, flex: 0.35, width: "80%", alignItems: "center" }}>
-                        <Text numberOfLines={1} adjustsFontSizeToFit style={styles.collectCode}>{collectCode}</Text>
-                        <View style={{width:"80%"}}>
-                            <Button title="OK" color="#1355A2" onPress={() => { setModalVisible(false) }} />
+                {!hasObtainedOrder ?
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+                        <View style={{ backgroundColor: 'white', margin: 20, borderRadius: 10, flex: 0.35, width: "80%", alignItems: "center" }}>
+                            <Text numberOfLines={1} adjustsFontSizeToFit style={styles.collectCode}>{collectCode}</Text>
+                            <View style={{ width: "80%" }}>
+                                <Button title="OK" color="#1355A2" onPress={() => { setObtainedOrder(true) }} />
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
+                    :
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: "white" }}>
+                        <Text adjustsFontSizeToFit style={{ color: 'black', fontSize: 30 }}>Merci pour votre commande !</Text>
+                        <Text numberOfLines={2} adjustsFontSizeToFit style={{ color: 'black', fontSize: 30, textAlign: "center" }}>S'il-vous-plaît, quelle est l'affluence dans le restaurant ?</Text>
+                        <View style={{ width: "80%" }}>
+                            <View style={{ margin: 5, borderRadius: 80, overflow: "hidden" }}>
+                                <Button color="#007a21" title="Faible" onPress={() => { voteAffluence("LOW") }} />
+                            </View>
+                            <View style={{ margin: 5, borderRadius: 80, overflow: "hidden" }}>
+                                <Button color="#ff9d00" title="Modérée" onPress={() => { voteAffluence("MODERATE") }} />
+                            </View>
+                            <View style={{ margin: 5, borderRadius: 80, overflow: "hidden" }}>
+                                <Button color="darkred" title="Forte" onPress={() => { voteAffluence("HIGH") }} />
+                            </View>
+                            <View style={{ margin: 5, borderRadius: 80, overflow: "hidden" }}>
+                                <Button color="#1355A2" title="Ne sait pas" onPress={() => { setModalVisible(false) }} />
+                            </View>
+                        </View>
+                    </View>}
+            </Modal >
             <View style={styles.title}>
                 <View style={styles.backButton}>
                     <Button color="#1355A2" onPress={() => { navigation.goBack() }} title="<" />
@@ -120,19 +165,19 @@ export default function Orders({ route, navigation }: { route: RouteProp<any>, n
                             );
                         })}
                         <Text style={styles.orderText}>Prix : {order.price}</Text>
-                        {order.status === "PENDING" ? <Button title="Récupérer la commande" color="#1355A2"
-                            onPress={pickOrder(order.id)} />
+                        {order.status === "READY" ? <Button title="Récupérer la commande" color="#1355A2"
+                            onPress={pickOrder(order.id, order.restaurantId)} />
                             : null}
                         {/* Vous pouvez ajouter d'autres détails de la commande ici */}
                     </View>
                 ))
-                    : (noOrders) ? (<Text style={{ color: "black" }}>NO ORDERS !</Text>)
+                    : (noOrders) ? (<Text style={{ color: "black", fontSize: 40, alignSelf: "center" }}>Aucune commande</Text>)
                         : (Array.from({ length: 8 }).map((_, index: number) => (<View key={index} style={styles.orderContainer}>
                             {/* Affichage durant le chargement */}
                         </View>)))
                 }
             </ScrollView>
-        </View>
+        </View >
     );
 }
 
