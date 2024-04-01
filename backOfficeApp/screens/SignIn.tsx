@@ -34,7 +34,7 @@ export default function SignIn({
         .post(backendUrl + '/auth/restaurant', formData)
         .then(response => {
           updateToken(response.data.token);
-          updateRestaurantId(RestaurantId);
+          updateRestaurantId(response.data.id.toString());
           navigation.navigate('Orders', {token: response.data.token});
         })
         .catch(error => {
@@ -43,10 +43,6 @@ export default function SignIn({
     } else {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
     }
-  };
-
-  const handleSignIn = id => {
-    navigation.navigate('Orders', {id: id});
   };
 
   return (

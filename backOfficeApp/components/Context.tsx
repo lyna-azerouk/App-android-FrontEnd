@@ -3,7 +3,7 @@ import {createContext} from 'react';
 const Context = createContext({
   token: '',
   updateToken: (_newToken: string) => {},
-  RestaurantId: '158603712',
+  RestaurantId: '',
   updateRestaurantId: (_newRestaurantId: string) => {},
 });
 
