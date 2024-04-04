@@ -37,6 +37,7 @@ const Orders = ({route}) => {
   const [restaurantName, setRestaurantName] = useState('');
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [codeInputs, setCodeInputs] = useState(['', '', '', '']);
+  const [orderId, setOrderId] = useState('');
 
   const fetchData = async () => {
     try {
@@ -288,8 +289,7 @@ const Orders = ({route}) => {
     }
   };
 
-  const handleCollect = async orderId => {
-    setCodeModalVisible(true);
+  const handleCodeSubmit = async () => {
     const confirmationCode = codeInputs.join('');
     try {
       const response = await axios.post(
@@ -309,10 +309,12 @@ const Orders = ({route}) => {
               ...order,
               status: Status.COLLECTE,
             };
+            
           } else {
             return order;
           }
         });
+        
 
         setOrders(updatedOrders);
         setCodeModalVisible(false);
@@ -320,16 +322,15 @@ const Orders = ({route}) => {
     } catch (error) {
       console.error('Failed to pick order:', error);
     }
-  };
-
-  const handleCodeSubmit = () => {
-    // Combine the input values to form the confirmation code
-    const code = codeInputs.join('');
-    // Handle the code submission, e.g., validate against a stored code
-    console.log('Confirmation Code:', code);
     // Close the modal
     setCodeModalVisible(false);
-    // Clear the input fields
+  };
+
+  const handleCollect = orderId => {
+    setOrderId(orderId);
+    setCodeModalVisible(true);
+    // Combine the input values to form the confirmation code
+    const code = codeInputs.join('');
     setCodeInputs(['', '', '', '']);
   };
 
